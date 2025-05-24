@@ -8,6 +8,11 @@ TILE_SIZE = 32
 ROWS, COLS = HEIGHT // TILE_SIZE, WIDTH // TILE_SIZE
 
 pygame.init()
+
+# --- SPRITES DE MAPA ---
+floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
+wall_img = pygame.transform.scale(pygame.image.load("sprites/wall.jpg"), (TILE_SIZE, TILE_SIZE))
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie Escape A*")
 clock = pygame.time.Clock()
@@ -66,9 +71,11 @@ def a_star(start, goal, grid):
 def draw_grid():
     for y in range(ROWS):
         for x in range(COLS):
-            rect = pygame.Rect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
-            color = WHITE if grid[y][x] == 0 else BLACK
-            pygame.draw.rect(screen, color, rect)
+            pos = (x * TILE_SIZE, y * TILE_SIZE)
+            if grid[y][x] == 0:
+                screen.blit(floor_img, pos)
+            else:
+                screen.blit(wall_img, pos)
 
 def generate_open_map():
     MAX_ATTEMPTS = 100
