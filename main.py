@@ -3,15 +3,20 @@ import heapq
 import random
 
 # --- CONFIGURACIÓN ---
-WIDTH, HEIGHT = 640, 480
-TILE_SIZE = 32
+
+
+TILE_SIZE = 64
+WIDTH, HEIGHT = 1024, 768  # múltiplos de TILE_SIZE: 1024/64=16 cols, 768/64=12 filas
 ROWS, COLS = HEIGHT // TILE_SIZE, WIDTH // TILE_SIZE
+
 
 pygame.init()
 
 # --- SPRITES DE MAPA ---
 floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
 wall_img = pygame.transform.scale(pygame.image.load("sprites/wall.jpg"), (TILE_SIZE, TILE_SIZE))
+
+
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie Escape A*")
