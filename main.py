@@ -3,8 +3,6 @@ import heapq
 import random
 
 # --- CONFIGURACIÓN ---
-
-
 TILE_SIZE = 64
 WIDTH, HEIGHT = 1024, 768  # múltiplos de TILE_SIZE: 1024/64=16 cols, 768/64=12 filas
 ROWS, COLS = HEIGHT // TILE_SIZE, WIDTH // TILE_SIZE
@@ -16,7 +14,17 @@ pygame.init()
 floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
 wall_img = pygame.transform.scale(pygame.image.load("sprites/wall.jpg"), (TILE_SIZE, TILE_SIZE))
 
+player_direction = "down"
+player_frame = 0
+PLAYER_ANIM_DELAY = 6  # menor = más rápido
+player_anim_counter = 0
 
+player_sprites = {
+    "down":  [pygame.image.load(f"sprites/player/down_{i}.png")  for i in range(4)],
+    "up":    [pygame.image.load(f"sprites/player/up_{i}.png")    for i in range(4)],
+    "left":  [pygame.image.load(f"sprites/player/left_{i}.png")  for i in range(4)],
+    "right": [pygame.image.load(f"sprites/player/right_{i}.png") for i in range(4)]
+}
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie Escape A*")
@@ -144,16 +152,17 @@ while running:
     if player_cooldown >= PLAYER_DELAY:
         keys = pygame.key.get_pressed()
         dx, dy = 0, 0
-        if keys[pygame.K_LEFT]: dx = -1
-        elif keys[pygame.K_RIGHT]: dx = 1
-        elif keys[pygame.K_UP]: dy = -1
-        elif keys[pygame.K_DOWN]: dy = 1
+        direction = None
+        if keys[pygame.K_LEFT]: dx, direction = -1, "left"
+        elif keys[pygame.K_RIGHT]: dx, direction = 1, "right"
+        elif keys[pygame.K_UP]: dy, direction = -1, "up"
+        elif keys[pygame.K_DOWN]: dy, direction = 1, "down"
 
         new_x, new_y = player_pos[0] + dx, player_pos[1] + dy
-        if 0 <= new_x < COLS and 0 <= new_y < ROWS and grid[new_y][new_x] == 0:
+        if direction and 0 <= new_x < COLS and 0 <= new_y < ROWS and grid[new_y][new_x] == 0:
             player_pos = [new_x, new_y]
-            player_cooldown = 0  # resetea cooldown solo si se movió
-
+            player_direction = direction
+            player_cooldown = 0  # reset cooldown solo si se movió
 
     # Movimiento de zombies (más lentos)
     zombie_cooldown += 1
@@ -169,7 +178,14 @@ while running:
     draw_grid()
 
     # Jugador
-    pygame.draw.rect(screen, BLUE, (player_pos[0]*TILE_SIZE, player_pos[1]*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+    player_anim_counter += 1
+    if player_anim_counter >= PLAYER_ANIM_DELAY:
+        player_frame = (player_frame + 1) % len(player_sprites[player_direction])
+        player_anim_counter = 0
+
+    current_sprite = player_sprites[player_direction][player_frame]
+    screen.blit(current_sprite, (player_pos[0]*TILE_SIZE, player_pos[1]*TILE_SIZE))
+
     # Zombies
     for z in zombie_positions:
         pygame.draw.rect(screen, RED, (z[0]*TILE_SIZE, z[1]*TILE_SIZE, TILE_SIZE, TILE_SIZE))
