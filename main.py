@@ -3,15 +3,13 @@ import heapq
 import random
 
 # --- CONFIGURACIÓN AUMENTADA ---
-TILE_SIZE = 80  # Aumentado de 64 a 80
-WIDTH, HEIGHT = 1280, 960  # Aumentado de 1024x768 a 1280x960 (16x12 tiles)
+TILE_SIZE = 64  # Aumentado de 64 a 80
+WIDTH, HEIGHT = 1024, 768  # Aumentado de 1024x768 a 1280x960 (16x12 tiles)
 ROWS, COLS = HEIGHT // TILE_SIZE, WIDTH // TILE_SIZE
 
 pygame.init()
 
-# --- SPRITES DE MAPA ---
-floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
-wall_img = pygame.transform.scale(pygame.image.load("sprites/wall.jpg"), (TILE_SIZE, TILE_SIZE))
+
 
 # --- SPRITES DEL JUGADOR ---
 player_direction = "down"
@@ -28,7 +26,7 @@ player_sprites = {
 }
 
 # --- SPRITES DE ZOMBIES (aumentados aún más) ---
-ZOMBIE_SCALE = int(TILE_SIZE * 1.2)  # Zombies un 20% más grandes que el jugador
+ZOMBIE_SCALE = int(TILE_SIZE * 1.5)  # Zombies un 20% más grandes que el jugador
 zombie_sprites = {
     "down": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_down{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)],
     "up": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_up{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)],
@@ -38,11 +36,21 @@ zombie_sprites = {
 
 # --- PANTALLA ---
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Zombie Escape A* - Versión Grande")
+pygame.display.set_caption("Zombie Escape A*")
 clock = pygame.time.Clock()
 
 player_cooldown = 0
 PLAYER_DELAY = 2
+
+# --- SPRITES DE MAPA ---
+floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
+wall_img = pygame.transform.scale(
+    pygame.image.load("sprites/wall.png").convert_alpha(),
+    (TILE_SIZE, TILE_SIZE)
+)
+goal_img = pygame.transform.scale(pygame.image.load("sprites/goal.png"), (TILE_SIZE, TILE_SIZE))
+background_img = pygame.transform.scale(pygame.image.load("sprites/background.jpg"), (WIDTH, HEIGHT))
+
 
 # --- COLORES ---
 WHITE = (255, 255, 255)
@@ -96,10 +104,9 @@ def draw_grid():
     for y in range(ROWS):
         for x in range(COLS):
             pos = (x * TILE_SIZE, y * TILE_SIZE)
-            if grid[y][x] == 0:
-                screen.blit(floor_img, pos)
-            else:
+            if grid[y][x] == 1:
                 screen.blit(wall_img, pos)
+                
 
 def generate_open_map():
     MAX_ATTEMPTS = 100
@@ -199,7 +206,9 @@ while running:
         zombie_cooldown = 0
 
     # Dibujo
-    screen.fill(BLACK)
+    # screen.fill(BLACK)  ← QUÍTALO
+    screen.blit(background_img, (0, 0))  # Esto pone el fondo
+
     draw_grid()
 
     # Jugador
@@ -224,7 +233,7 @@ while running:
         screen.blit(z_sprite, (z[0]*TILE_SIZE + zombie_offset, z[1]*TILE_SIZE + zombie_offset))
 
     # Salida
-    pygame.draw.rect(screen, YELLOW, (exit_pos[0]*TILE_SIZE, exit_pos[1]*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+    screen.blit(goal_img, (exit_pos[0] * TILE_SIZE, exit_pos[1] * TILE_SIZE))
 
     pygame.display.flip()
 
