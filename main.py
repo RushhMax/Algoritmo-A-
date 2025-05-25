@@ -2,11 +2,10 @@ import pygame
 import heapq
 import random
 
-# --- CONFIGURACIÓN ---
-TILE_SIZE = 64
-WIDTH, HEIGHT = 1024, 768  # múltiplos de TILE_SIZE: 1024/64=16 cols, 768/64=12 filas
+# --- CONFIGURACIÓN AUMENTADA ---
+TILE_SIZE = 80  # Aumentado de 64 a 80
+WIDTH, HEIGHT = 1280, 960  # Aumentado de 1024x768 a 1280x960 (16x12 tiles)
 ROWS, COLS = HEIGHT // TILE_SIZE, WIDTH // TILE_SIZE
-
 
 pygame.init()
 
@@ -14,30 +13,43 @@ pygame.init()
 floor_img = pygame.transform.scale(pygame.image.load("sprites/Floor.jpg"), (TILE_SIZE, TILE_SIZE))
 wall_img = pygame.transform.scale(pygame.image.load("sprites/wall.jpg"), (TILE_SIZE, TILE_SIZE))
 
+# --- SPRITES DEL JUGADOR ---
 player_direction = "down"
 player_frame = 0
-PLAYER_ANIM_DELAY = 6  # menor = más rápido
+PLAYER_ANIM_DELAY = 6
 player_anim_counter = 0
 
+# Cargar y escalar sprites del jugador (más grandes)
 player_sprites = {
-    "down":  [pygame.image.load(f"sprites/player/down_{i}.png")  for i in range(4)],
-    "up":    [pygame.image.load(f"sprites/player/up_{i}.png")    for i in range(4)],
-    "left":  [pygame.image.load(f"sprites/player/left_{i}.png")  for i in range(4)],
-    "right": [pygame.image.load(f"sprites/player/right_{i}.png") for i in range(4)]
+    "down": [pygame.transform.scale(pygame.image.load(f"sprites/player/down_{i}.png"), (TILE_SIZE, TILE_SIZE)) for i in range(4)],
+    "up": [pygame.transform.scale(pygame.image.load(f"sprites/player/up_{i}.png"), (TILE_SIZE, TILE_SIZE)) for i in range(4)],
+    "left": [pygame.transform.scale(pygame.image.load(f"sprites/player/left_{i}.png"), (TILE_SIZE, TILE_SIZE)) for i in range(4)],
+    "right": [pygame.transform.scale(pygame.image.load(f"sprites/player/right_{i}.png"), (TILE_SIZE, TILE_SIZE)) for i in range(4)]
 }
 
+# --- SPRITES DE ZOMBIES (aumentados aún más) ---
+ZOMBIE_SCALE = int(TILE_SIZE * 1.2)  # Zombies un 20% más grandes que el jugador
+zombie_sprites = {
+    "down": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_down{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)],
+    "up": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_up{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)],
+    "left": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_left{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)],
+    "right": [pygame.transform.scale(pygame.image.load(f"sprites/zombies/Zombie1_right{i}.png"), (ZOMBIE_SCALE, ZOMBIE_SCALE)) for i in range(1, 5)]
+}
+
+# --- PANTALLA ---
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Zombie Escape A*")
+pygame.display.set_caption("Zombie Escape A* - Versión Grande")
 clock = pygame.time.Clock()
+
 player_cooldown = 0
-PLAYER_DELAY = 2 # puedes ajustar este valor
+PLAYER_DELAY = 2
 
 # --- COLORES ---
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED   = (255, 0, 0)
+RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-BLUE  = (0, 0, 255)
+BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
 # --- FUNCIONES AUXILIARES ---
@@ -80,7 +92,6 @@ def a_star(start, goal, grid):
     path.reverse()
     return path
 
-
 def draw_grid():
     for y in range(ROWS):
         for x in range(COLS):
@@ -101,43 +112,48 @@ def generate_open_map():
                 g[y][x] = 1
 
         def path_exists(a, b):
-            return bool(a_star(a, b, g))  # PASAMOS 'g'
+            return bool(a_star(a, b, g))
 
-        if (
-            path_exists((1, 1), (COLS - 2, ROWS - 2)) and
+        if (path_exists((1, 1), (COLS - 2, ROWS - 2)) and
             path_exists((1, ROWS - 2), (1, 1)) and
-            path_exists((COLS - 2, 1), (1, 1))
-        ):
+            path_exists((COLS - 2, 1), (1, 1))):
             return g
 
     raise RuntimeError("No se pudo generar un mapa válido tras múltiples intentos.")
 
+# --- PANTALLA DE INICIO ---
+def show_start_screen():
+    start_img = pygame.image.load("sprites/homeScreen/start.png")
+    start_img = pygame.transform.scale(start_img, (WIDTH, HEIGHT))
 
-# --- GENERADOR DE MAPAS CONECTADOS (DFS Maze) ---
-def generate_connected_grid():
-    g = [[1 for _ in range(COLS)] for _ in range(ROWS)]
+    waiting = True
+    while waiting:
+        screen.blit(start_img, (0, 0))
+        pygame.display.flip()
 
-    def carve(x, y):
-        g[y][x] = 0
-        directions = [(1,0), (-1,0), (0,1), (0,-1)]
-        random.shuffle(directions)
-        for dx, dy in directions:
-            nx, ny = x + dx*2, y + dy*2
-            if 0 <= nx < COLS and 0 <= ny < ROWS and g[ny][nx] == 1:
-                g[y + dy][x + dx] = 0
-                carve(nx, ny)
-
-    carve(1, 1)
-    return g
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    waiting = False
 
 # --- INICIALIZACIÓN DE ENTIDADES ---
-grid = generate_open_map() 
-#generate_connected_grid() # 
+grid = generate_open_map()
 player_pos = [1, 1]
 exit_pos = [COLS - 2, ROWS - 2]
 zombie_positions = [[1, ROWS - 2], [COLS - 2, 1]]
+zombie_directions = ["down"] * len(zombie_positions)
+zombie_frames = [0] * len(zombie_positions)
+zombie_anim_counters = [0] * len(zombie_positions)
+
 zombie_cooldown = 0
-ZOMBIE_DELAY = 15  # cuanto más alto, más lentos
+ZOMBIE_DELAY = 15
+ZOMBIE_ANIM_DELAY = 10
+
+# --- MOSTRAR PANTALLA DE INICIO ---
+show_start_screen()
 
 # --- LOOP PRINCIPAL ---
 running = True
@@ -147,7 +163,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Movimiento del jugador con delay
+    # Movimiento del jugador
     player_cooldown += 1
     if player_cooldown >= PLAYER_DELAY:
         keys = pygame.key.get_pressed()
@@ -162,15 +178,24 @@ while running:
         if direction and 0 <= new_x < COLS and 0 <= new_y < ROWS and grid[new_y][new_x] == 0:
             player_pos = [new_x, new_y]
             player_direction = direction
-            player_cooldown = 0  # reset cooldown solo si se movió
+            player_cooldown = 0
 
-    # Movimiento de zombies (más lentos)
+    # Movimiento de zombies
     zombie_cooldown += 1
     if zombie_cooldown >= ZOMBIE_DELAY:
         for i, z_pos in enumerate(zombie_positions):
             path = a_star(tuple(z_pos), tuple(player_pos), grid)
             if path:
-                zombie_positions[i] = list(path[0])  # mueve 1 paso
+                dx = path[0][0] - z_pos[0]
+                dy = path[0][1] - z_pos[1]
+                if dx == 1: direction = "right"
+                elif dx == -1: direction = "left"
+                elif dy == 1: direction = "down"
+                elif dy == -1: direction = "up"
+                else: direction = zombie_directions[i]
+
+                zombie_positions[i] = list(path[0])
+                zombie_directions[i] = direction
         zombie_cooldown = 0
 
     # Dibujo
@@ -186,9 +211,18 @@ while running:
     current_sprite = player_sprites[player_direction][player_frame]
     screen.blit(current_sprite, (player_pos[0]*TILE_SIZE, player_pos[1]*TILE_SIZE))
 
-    # Zombies
-    for z in zombie_positions:
-        pygame.draw.rect(screen, RED, (z[0]*TILE_SIZE, z[1]*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+    # Zombies (más grandes que el jugador)
+    for i, z in enumerate(zombie_positions):
+        zombie_anim_counters[i] += 1
+        if zombie_anim_counters[i] >= ZOMBIE_ANIM_DELAY:
+            zombie_frames[i] = (zombie_frames[i] + 1) % 4
+            zombie_anim_counters[i] = 0
+
+        z_sprite = zombie_sprites[zombie_directions[i]][zombie_frames[i]]
+        # Ajuste de posición para centrar los zombies más grandes
+        zombie_offset = (TILE_SIZE - ZOMBIE_SCALE) // 2
+        screen.blit(z_sprite, (z[0]*TILE_SIZE + zombie_offset, z[1]*TILE_SIZE + zombie_offset))
+
     # Salida
     pygame.draw.rect(screen, YELLOW, (exit_pos[0]*TILE_SIZE, exit_pos[1]*TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
@@ -201,7 +235,7 @@ while running:
 
     # Condición de derrota
     for z in zombie_positions:
-        if z == player_pos:
+        if abs(z[0] - player_pos[0]) < 0.8 and abs(z[1] - player_pos[1]) < 0.8:
             print("¡Fuiste atrapado!")
             running = False
 
